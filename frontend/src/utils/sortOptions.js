@@ -1,6 +1,6 @@
 export const SORT_OPTIONS = [
-  "by default",
-  "newest",
-  "price: high-low",
-  "price: low-high",
-];
+	'по умолчанию',
+	'новейший',
+	'высокая-низкая',
+	'низка-высокая',
+]
