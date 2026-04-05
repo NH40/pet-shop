@@ -13,16 +13,45 @@ const totalItemsSum = items => {
 	}, 0)
 }
 
+const getAutomaticDiscount = cartItems => {
+	if (!cartItems.length) return 0
+
+	const totalQuantity = cartItems.reduce(
+		(sum, item) => sum + (item.quantity ?? 1),
+		0,
+	)
+	if (totalQuantity < 4) return 0
+
+	const uniqueCategories = new Set()
+	for (const item of cartItems) {
+		if (item.categoryId) {
+			uniqueCategories.add(item.categoryId)
+		}
+	}
+	if (uniqueCategories.size >= 4) return 20
+
+	return 0
+}
+
 const CartPage = () => {
 	const cartItems = useSelector(state => state.cart.items)
 	const totalSum = totalItemsSum(cartItems)
+
 	const {
 		isSubmitted: isDiscountApplied,
 		discountPercent,
 		discountUsed,
 	} = useSelector(state => state.sale)
+
+	const automaticDiscount = getAutomaticDiscount(cartItems)
+
 	const effectiveDiscount =
-		!discountUsed && isDiscountApplied ? discountPercent : 0
+		automaticDiscount > 0
+			? automaticDiscount
+			: !discountUsed && isDiscountApplied
+				? discountPercent
+				: 0
+
 	const discountedTotal = +(totalSum * (1 - effectiveDiscount / 100)).toFixed(2)
 
 	return (
@@ -47,22 +76,29 @@ const CartPage = () => {
 						))}
 					</div>
 					<div className='p-4 xl:p-5 bg-secondary-grey lg:w-[40%] h-max rounded-xl'>
-						{isDiscountApplied && (
+						{automaticDiscount > 0 && (
+							<div className='text-center text-green-600 bg-green-100 rounded-md p-2 mb-4'>
+								🎉 Поздравляем! Вы получили скидку 20% за покупку 4+ товаров из
+								разных категорий!
+							</div>
+						)}
+						{!automaticDiscount && isDiscountApplied && (
 							<div className='text-center text-main-blue mb-4'>
 								🎉 У вас скидка 5%!
 							</div>
 						)}
-						<h2 className='text-3xl xl:text-[40px] font-bold text-center  text-nowrap'>
+						<h2 className='text-3xl xl:text-[40px] font-bold text-center text-nowrap'>
 							Детали заказа
 						</h2>
 						<p className='text-main-grey text-2xl xl:text-4xl'>
-							{cartItems.length} х продуктов
+							{cartItems.reduce((sum, item) => sum + (item.quantity ?? 1), 0)} х
+							продуктов
 						</p>
 						<div className='flex justify-between mb-6 flex-col md:items-center lg:items-start xl:items-end md:flex-row lg:flex-col xl:flex-row'>
 							<p className='text-main-grey text-2xl xl:text-4xl'>Общий</p>
 							<p className='font-bold text-3xl xl:text-5xl leading-none'>
 								{priceFormatting(discountedTotal)}
-								{isDiscountApplied && (
+								{effectiveDiscount > 0 && (
 									<span className='text-main-grey text-2xl xl:text-4xl line-through ml-2 md:ml-4'>
 										{priceFormatting(totalSum)}
 									</span>
